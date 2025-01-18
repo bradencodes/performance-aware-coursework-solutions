@@ -145,27 +145,45 @@ const get16bitDirectAddressCalculationAssemblyText = (
   return `${instructionName} ${destinationString}, ${sourceString}`;
 };
 
+const getAddressCalculationString = (rm: number) => {
+  const addressCalculationMap = new Array(8);
+  addressCalculationMap[0b000] = "bx + si";
+  addressCalculationMap[0b001] = "bx + di";
+  addressCalculationMap[0b010] = "bp + si";
+  addressCalculationMap[0b011] = "bp + di";
+  addressCalculationMap[0b100] = "si";
+  addressCalculationMap[0b101] = "di";
+  addressCalculationMap[0b110] = "bp";
+  addressCalculationMap[0b111] = "bx";
+
+  return addressCalculationMap[rm];
+};
+
 const getAddressCalculationAssemblyText = (byte1: number, byte2: number) => {
   const { opcode, d, w, reg, rm } =
     getRegisterMemoryToFromRegisterInstructionParts(byte1, byte2);
 
   const instructionName = getInstructionName(opcode);
   const registerName = getRegisterName(w, reg);
-
-  const getAddressCalculationString = (rm: number) => {
-    const addressCalculationMap = new Array(8);
-    addressCalculationMap[0b000] = "bx + si";
-    addressCalculationMap[0b001] = "bx + di";
-    addressCalculationMap[0b010] = "bp + si";
-    addressCalculationMap[0b011] = "bp + di";
-    addressCalculationMap[0b100] = "si";
-    addressCalculationMap[0b101] = "di";
-    addressCalculationMap[0b110] = undefined;
-    addressCalculationMap[0b111] = "bx";
-
-    return addressCalculationMap[rm];
-  };
   const memoryString = `[${getAddressCalculationString(rm)}]`;
+
+  const destinationString = d ? registerName : memoryString;
+  const sourceString = !d ? registerName : memoryString;
+
+  return `${instructionName} ${destinationString}, ${sourceString}`;
+};
+
+const getAddressCalculationPlus8bitDisplacementAssemblyText = (
+  byte1: number,
+  byte2: number,
+  byte3: number,
+) => {
+  const { opcode, d, w, reg, rm } =
+    getRegisterMemoryToFromRegisterInstructionParts(byte1, byte2);
+
+  const instructionName = getInstructionName(opcode);
+  const registerName = getRegisterName(w, reg);
+  const memoryString = `[${getAddressCalculationString(rm)} + ${byte3}]`;
 
   const destinationString = d ? registerName : memoryString;
   const sourceString = !d ? registerName : memoryString;
@@ -312,16 +330,25 @@ const getInstructionInfo = (
     return { assemblyText, byteLength };
   }
 
-  // if (isAddressCalculationPlus8bitDisplacement) {
-  //   const byteLength = 3;
-  //   const assemblyText = getAddressCalculationPlus8bitDisplacementAssemblyText(
-  //     byte1,
-  //     byte2,
-  //     byte3,
-  //   );
+  const isAddressCalculationPlus8bitDisplacement = (() => {
+    const opcode = (byte1 & 0b11111100) >>> 2;
+    if (opcode !== 0b100010) return false;
 
-  //   return { assemblyText, byteLength };
-  // }
+    const mod = (byte2 & 0b11000000) >>> 6;
+    if (mod !== 0b01) return false;
+
+    return true;
+  })();
+  if (isAddressCalculationPlus8bitDisplacement) {
+    const byteLength = 3;
+    const assemblyText = getAddressCalculationPlus8bitDisplacementAssemblyText(
+      byte1,
+      byte2,
+      byte3,
+    );
+
+    return { assemblyText, byteLength };
+  }
 
   // if (isAddressCalculationPlus16bitDisplacement) {
   //   const byteLength = 4;
