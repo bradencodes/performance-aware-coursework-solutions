@@ -1,5 +1,36 @@
 import { parse } from "https://deno.land/std@0.200.0/flags/mod.ts";
 
+const getInstructionName = (opcode: number) => {
+  const instructionNameMap = [];
+  instructionNameMap[0b100010] = "mov";
+  instructionNameMap[0b1011] = "mov";
+
+  return instructionNameMap[opcode];
+};
+
+const getRegisterName = (w: number, registerCode: number) => {
+  const regsiterNameMap = [new Array(8), new Array(8)];
+  regsiterNameMap[0][0b000] = "al";
+  regsiterNameMap[0][0b001] = "cl";
+  regsiterNameMap[0][0b010] = "dl";
+  regsiterNameMap[0][0b011] = "bl";
+  regsiterNameMap[0][0b100] = "ah";
+  regsiterNameMap[0][0b101] = "ch";
+  regsiterNameMap[0][0b110] = "dh";
+  regsiterNameMap[0][0b111] = "bh";
+
+  regsiterNameMap[1][0b000] = "ax";
+  regsiterNameMap[1][0b001] = "cx";
+  regsiterNameMap[1][0b010] = "dx";
+  regsiterNameMap[1][0b011] = "bx";
+  regsiterNameMap[1][0b100] = "sp";
+  regsiterNameMap[1][0b101] = "bp";
+  regsiterNameMap[1][0b110] = "si";
+  regsiterNameMap[1][0b111] = "di";
+
+  return regsiterNameMap[w][registerCode];
+};
+
 const getRegisterToRegisterAssemblyText = (byte1: number, byte2: number) => {
   const getInstructionParts = (byte1: number, byte2: number) => {
     const opcode = (byte1 & 0b11111100) >>> 2;
@@ -11,37 +42,6 @@ const getRegisterToRegisterAssemblyText = (byte1: number, byte2: number) => {
 
     return { opcode, d, w, mod, reg, rm };
   };
-
-  const getInstructionName = (opcode: number) => {
-    const instructionNameMap = [];
-    instructionNameMap[0b100010] = "mov";
-
-    return instructionNameMap[opcode];
-  };
-
-  const getRegisterName = (w: number, registerCode: number) => {
-    const regsiterNameMap = [new Array(8), new Array(8)];
-    regsiterNameMap[0][0b000] = "al";
-    regsiterNameMap[0][0b001] = "cl";
-    regsiterNameMap[0][0b010] = "dl";
-    regsiterNameMap[0][0b011] = "bl";
-    regsiterNameMap[0][0b100] = "ah";
-    regsiterNameMap[0][0b101] = "ch";
-    regsiterNameMap[0][0b110] = "dh";
-    regsiterNameMap[0][0b111] = "bh";
-
-    regsiterNameMap[1][0b000] = "ax";
-    regsiterNameMap[1][0b001] = "cx";
-    regsiterNameMap[1][0b010] = "dx";
-    regsiterNameMap[1][0b011] = "bx";
-    regsiterNameMap[1][0b100] = "sp";
-    regsiterNameMap[1][0b101] = "bp";
-    regsiterNameMap[1][0b110] = "si";
-    regsiterNameMap[1][0b111] = "di";
-
-    return regsiterNameMap[w][registerCode];
-  };
-
   const { opcode, d, w, reg, rm } = getInstructionParts(byte1, byte2);
 
   const destinationByte = d ? reg : rm;
@@ -52,6 +52,27 @@ const getRegisterToRegisterAssemblyText = (byte1: number, byte2: number) => {
   const sourceName = getRegisterName(w, sourceByte);
 
   return `${instructionName} ${destinationName}, ${sourceName}`;
+};
+
+const get8bitImmediateToRegisterAssemblyText = (
+  byte1: number,
+  byte2: number,
+) => {
+  const getInstructionParts = (byte1: number, byte2: number) => {
+    const opcode = (byte1 & 0b11110000) >>> 4;
+    const w = (byte1 & 0b00001000) >>> 3;
+    const reg = byte1 & 0b00001111;
+    const data = byte2;
+
+    return { opcode, w, reg, data };
+  };
+  const { opcode, w, reg, data } = getInstructionParts(byte1, byte2);
+
+  const instructionName = getInstructionName(opcode);
+  const destinationName = getRegisterName(w, reg);
+  const immediateValue = data;
+
+  return `${instructionName} ${destinationName}, ${immediateValue}`;
 };
 
 const getInstructionInfo = (
@@ -79,15 +100,24 @@ const getInstructionInfo = (
     return { assemblyText, byteLength };
   }
 
-  // if (is8bitImmediateToRegister) {
-  //   const byteLength = 2;
-  //   const assemblyText = get8bitImmediateToRegisterAssemblyText(
-  //     byte1,
-  //     byte2,
-  //   );
+  const is8bitImmediateToRegister = (() => {
+    const opcode = (byte1 & 0b11110000) >>> 4;
+    if (opcode !== 0b1011) return false;
 
-  //   return { assemblyText, byteLength };
-  // }
+    const w = (byte1 & 0b00001000) >>> 3;
+    if (w !== 0b0) return false;
+
+    return true;
+  })();
+  if (is8bitImmediateToRegister) {
+    const byteLength = 2;
+    const assemblyText = get8bitImmediateToRegisterAssemblyText(
+      byte1,
+      byte2,
+    );
+
+    return { assemblyText, byteLength };
+  }
 
   // if (is16bitImmediateToRegister) {
   //   const byteLength = 3;
