@@ -31,18 +31,23 @@ const getRegisterName = (w: number, registerCode: number) => {
   return regsiterNameMap[w][registerCode];
 };
 
-const getRegisterToRegisterAssemblyText = (byte1: number, byte2: number) => {
-  const getInstructionParts = (byte1: number, byte2: number) => {
-    const opcode = (byte1 & 0b11111100) >>> 2;
-    const d = (byte1 & 0b00000010) >>> 1;
-    const w = byte1 & 0b00000001;
-    const mod = (byte2 & 0b11000000) >>> 6;
-    const reg = (byte2 & 0b00111000) >>> 3;
-    const rm = byte2 & 0b00000111;
+const getRegisterMemoryToFromRegisterInstructionParts = (
+  byte1: number,
+  byte2: number,
+) => {
+  const opcode = (byte1 & 0b11111100) >>> 2;
+  const d = (byte1 & 0b00000010) >>> 1;
+  const w = byte1 & 0b00000001;
+  const mod = (byte2 & 0b11000000) >>> 6;
+  const reg = (byte2 & 0b00111000) >>> 3;
+  const rm = byte2 & 0b00000111;
 
-    return { opcode, d, w, mod, reg, rm };
-  };
-  const { opcode, d, w, reg, rm } = getInstructionParts(byte1, byte2);
+  return { opcode, d, w, mod, reg, rm };
+};
+
+const getRegisterToRegisterAssemblyText = (byte1: number, byte2: number) => {
+  const { opcode, d, w, reg, rm } =
+    getRegisterMemoryToFromRegisterInstructionParts(byte1, byte2);
 
   const destinationByte = d ? reg : rm;
   const sourceByte = !d ? reg : rm;
@@ -95,6 +100,77 @@ const get16bitImmediateToRegisterAssemblyText = (
   const immediateValue = data;
 
   return `${instructionName} ${destinationName}, ${immediateValue}`;
+};
+
+const get8bitDirectAddressCalculationAssemblyText = (
+  byte1: number,
+  byte2: number,
+  byte3: number,
+) => {
+  const { opcode, d, w, reg } = getRegisterMemoryToFromRegisterInstructionParts(
+    byte1,
+    byte2,
+  );
+
+  const instructionName = getInstructionName(opcode);
+  const registerName = getRegisterName(w, reg);
+
+  const memoryString = `[${byte3}]`;
+
+  const destinationString = d ? registerName : memoryString;
+  const sourceString = !d ? registerName : memoryString;
+
+  return `${instructionName} ${destinationString}, ${sourceString}`;
+};
+
+const get16bitDirectAddressCalculationAssemblyText = (
+  byte1: number,
+  byte2: number,
+  byte3: number,
+  byte4: number,
+) => {
+  const { opcode, d, w, reg } = getRegisterMemoryToFromRegisterInstructionParts(
+    byte1,
+    byte2,
+  );
+
+  const instructionName = getInstructionName(opcode);
+  const registerName = getRegisterName(w, reg);
+
+  const memoryString = `[${(byte4 << 8) | byte3}]`;
+
+  const destinationString = d ? registerName : memoryString;
+  const sourceString = !d ? registerName : memoryString;
+
+  return `${instructionName} ${destinationString}, ${sourceString}`;
+};
+
+const getAddressCalculationAssemblyText = (byte1: number, byte2: number) => {
+  const { opcode, d, w, reg, rm } =
+    getRegisterMemoryToFromRegisterInstructionParts(byte1, byte2);
+
+  const instructionName = getInstructionName(opcode);
+  const registerName = getRegisterName(w, reg);
+
+  const getAddressCalculationString = (rm: number) => {
+    const addressCalculationMap = new Array(8);
+    addressCalculationMap[0b000] = "bx + si";
+    addressCalculationMap[0b001] = "bx + di";
+    addressCalculationMap[0b010] = "bp + si";
+    addressCalculationMap[0b011] = "bp + di";
+    addressCalculationMap[0b100] = "si";
+    addressCalculationMap[0b101] = "di";
+    addressCalculationMap[0b110] = undefined;
+    addressCalculationMap[0b111] = "bx";
+
+    return addressCalculationMap[rm];
+  };
+  const memoryString = `[${getAddressCalculationString(rm)}]`;
+
+  const destinationString = d ? registerName : memoryString;
+  const sourceString = !d ? registerName : memoryString;
+
+  return `${instructionName} ${destinationString}, ${sourceString}`;
 };
 
 const getInstructionInfo = (
@@ -161,15 +237,80 @@ const getInstructionInfo = (
     return { assemblyText, byteLength };
   }
 
-  // if (isAddressCalculation) {
-  //   const byteLength = 2;
-  //   const assemblyText = getAddressCalculationAssemblyText(
-  //     byte1,
-  //     byte2,
-  //   );
+  const is8bitDirectAddressCalculation = (() => {
+    const opcode = (byte1 & 0b11111100) >>> 2;
+    if (opcode !== 0b100010) return false;
 
-  //   return { assemblyText, byteLength };
-  // }
+    const mod = (byte2 & 0b11000000) >>> 6;
+    if (mod !== 0b00) return false;
+
+    const rm = byte2 & 0b00000111;
+    if (rm !== 0b110) return false;
+
+    const w = byte1 & 0b00000001;
+    if (w !== 0b0) return false;
+
+    return true;
+  })();
+  if (is8bitDirectAddressCalculation) {
+    const byteLength = 3;
+    const assemblyText = get8bitDirectAddressCalculationAssemblyText(
+      byte1,
+      byte2,
+      byte3,
+    );
+
+    return { assemblyText, byteLength };
+  }
+
+  const is16bitDirectAddressCalculation = (() => {
+    const opcode = (byte1 & 0b11111100) >>> 2;
+    if (opcode !== 0b100010) return false;
+
+    const mod = (byte2 & 0b11000000) >>> 6;
+    if (mod !== 0b00) return false;
+
+    const rm = byte2 & 0b00000111;
+    if (rm !== 0b110) return false;
+
+    const w = byte1 & 0b00000001;
+    if (w !== 0b1) return false;
+
+    return true;
+  })();
+  if (is16bitDirectAddressCalculation) {
+    const byteLength = 4;
+    const assemblyText = get16bitDirectAddressCalculationAssemblyText(
+      byte1,
+      byte2,
+      byte3,
+      byte4,
+    );
+
+    return { assemblyText, byteLength };
+  }
+
+  const isAddressCalculation = (() => {
+    const opcode = (byte1 & 0b11111100) >>> 2;
+    if (opcode !== 0b100010) return false;
+
+    const mod = (byte2 & 0b11000000) >>> 6;
+    if (mod !== 0b00) return false;
+
+    const rm = byte2 & 0b00000111;
+    if (rm === 0b110) return false;
+
+    return true;
+  })();
+  if (isAddressCalculation) {
+    const byteLength = 2;
+    const assemblyText = getAddressCalculationAssemblyText(
+      byte1,
+      byte2,
+    );
+
+    return { assemblyText, byteLength };
+  }
 
   // if (isAddressCalculationPlus8bitDisplacement) {
   //   const byteLength = 3;
@@ -194,7 +335,7 @@ const getInstructionInfo = (
   //   return { assemblyText, byteLength };
   // }
 
-  return { assemblyText: "invalid", byteLength: 2 };
+  return { assemblyText: "invalid", byteLength: 1 };
 };
 
 const main = () => {
