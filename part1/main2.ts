@@ -191,6 +191,27 @@ const getAddressCalculationPlus8bitDisplacementAssemblyText = (
   return `${instructionName} ${destinationString}, ${sourceString}`;
 };
 
+const getAddressCalculationPlus16bitDisplacementAssemblyText = (
+  byte1: number,
+  byte2: number,
+  byte3: number,
+  byte4: number,
+) => {
+  const { opcode, d, w, reg, rm } =
+    getRegisterMemoryToFromRegisterInstructionParts(byte1, byte2);
+
+  const instructionName = getInstructionName(opcode);
+  const registerName = getRegisterName(w, reg);
+  const memoryString = `[${getAddressCalculationString(rm)} + ${
+    (byte4 << 8) | byte3
+  }]`;
+
+  const destinationString = d ? registerName : memoryString;
+  const sourceString = !d ? registerName : memoryString;
+
+  return `${instructionName} ${destinationString}, ${sourceString}`;
+};
+
 const getInstructionInfo = (
   byte1: number,
   byte2: number,
@@ -350,17 +371,26 @@ const getInstructionInfo = (
     return { assemblyText, byteLength };
   }
 
-  // if (isAddressCalculationPlus16bitDisplacement) {
-  //   const byteLength = 4;
-  //   const assemblyText = getAddressCalculationPlus16bitDisplacementAssemblyText(
-  //     byte1,
-  //     byte2,
-  //     byte3,
-  //     byte4,
-  //   );
+  const isAddressCalculationPlus16bitDisplacement = (() => {
+    const opcode = (byte1 & 0b11111100) >>> 2;
+    if (opcode !== 0b100010) return false;
 
-  //   return { assemblyText, byteLength };
-  // }
+    const mod = (byte2 & 0b11000000) >>> 6;
+    if (mod !== 0b10) return false;
+
+    return true;
+  })();
+  if (isAddressCalculationPlus16bitDisplacement) {
+    const byteLength = 4;
+    const assemblyText = getAddressCalculationPlus16bitDisplacementAssemblyText(
+      byte1,
+      byte2,
+      byte3,
+      byte4,
+    );
+
+    return { assemblyText, byteLength };
+  }
 
   return { assemblyText: "invalid", byteLength: 1 };
 };
