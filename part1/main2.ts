@@ -61,12 +61,34 @@ const get8bitImmediateToRegisterAssemblyText = (
   const getInstructionParts = (byte1: number, byte2: number) => {
     const opcode = (byte1 & 0b11110000) >>> 4;
     const w = (byte1 & 0b00001000) >>> 3;
-    const reg = byte1 & 0b00001111;
+    const reg = byte1 & 0b00000111;
     const data = byte2;
 
     return { opcode, w, reg, data };
   };
   const { opcode, w, reg, data } = getInstructionParts(byte1, byte2);
+
+  const instructionName = getInstructionName(opcode);
+  const destinationName = getRegisterName(w, reg);
+  const immediateValue = data;
+
+  return `${instructionName} ${destinationName}, ${immediateValue}`;
+};
+
+const get16bitImmediateToRegisterAssemblyText = (
+  byte1: number,
+  byte2: number,
+  byte3: number,
+) => {
+  const getInstructionParts = (byte1: number, byte2: number, byte3: number) => {
+    const opcode = (byte1 & 0b11110000) >>> 4;
+    const w = (byte1 & 0b00001000) >>> 3;
+    const reg = byte1 & 0b00000111;
+    const data = (byte3 << 8) | byte2;
+
+    return { opcode, w, reg, data };
+  };
+  const { opcode, w, reg, data } = getInstructionParts(byte1, byte2, byte3);
 
   const instructionName = getInstructionName(opcode);
   const destinationName = getRegisterName(w, reg);
@@ -119,16 +141,25 @@ const getInstructionInfo = (
     return { assemblyText, byteLength };
   }
 
-  // if (is16bitImmediateToRegister) {
-  //   const byteLength = 3;
-  //   const assemblyText = get16bitImmediateToRegisterAssemblyText(
-  //     byte1,
-  //     byte2,
-  //     byte3,
-  //   );
+  const is16bitImmediateToRegister = (() => {
+    const opcode = (byte1 & 0b11110000) >>> 4;
+    if (opcode !== 0b1011) return false;
 
-  //   return { assemblyText, byteLength };
-  // }
+    const w = (byte1 & 0b00001000) >>> 3;
+    if (w !== 0b1) return false;
+
+    return true;
+  })();
+  if (is16bitImmediateToRegister) {
+    const byteLength = 3;
+    const assemblyText = get16bitImmediateToRegisterAssemblyText(
+      byte1,
+      byte2,
+      byte3,
+    );
+
+    return { assemblyText, byteLength };
+  }
 
   // if (isAddressCalculation) {
   //   const byteLength = 2;
