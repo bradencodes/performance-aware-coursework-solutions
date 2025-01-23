@@ -417,8 +417,19 @@ const getRmString = (
   return getRegisterName(w, rm); // Register Mode
 };
 
-export const INSTRUCTIONS = {
-  MOVE: {
+const JumpAndLoopInstructionUtils = {
+  getInstructionInfo: (mnemonic: string, byte2: number) => {
+    const [signedNumber] = new Int8Array([byte2]);
+    const assemblyText = `${mnemonic} ${signedNumber}`;
+
+    const numOfBytes = 2;
+
+    return { assemblyText, numOfBytes };
+  },
+};
+
+export const Instructions = {
+  Move: {
     mnemonic: "mov",
 
     RegisterOrMemoryToOrFromRegister: {
@@ -430,7 +441,7 @@ export const INSTRUCTIONS = {
         byte4?: number,
       ) =>
         RegisterOrMemoryAndRegisterInstructions.getInstructionInfo(
-          INSTRUCTIONS.MOVE.mnemonic,
+          Instructions.Move.mnemonic,
           byte1,
           byte2,
           byte3,
@@ -451,7 +462,7 @@ export const INSTRUCTIONS = {
         byte6?: number,
       ) =>
         ImmediateAndRegisterOrMemoryInstructions.getInstructionInfo(
-          INSTRUCTIONS.MOVE.mnemonic,
+          Instructions.Move.mnemonic,
           byte1,
           byte2,
           byte3,
@@ -487,7 +498,7 @@ export const INSTRUCTIONS = {
         const assemblyText = (() => {
           const registerName = getRegisterName(w, reg);
 
-          return `${INSTRUCTIONS.MOVE.mnemonic} ${registerName}, ${data}`;
+          return `${Instructions.Move.mnemonic} ${registerName}, ${data}`;
         })();
 
         return { assemblyText, numOfBytes };
@@ -495,7 +506,7 @@ export const INSTRUCTIONS = {
     },
   },
 
-  ADD: {
+  Add: {
     mnemonic: "add",
 
     RegisterOrMemoryWithRegisterToEither: {
@@ -507,7 +518,7 @@ export const INSTRUCTIONS = {
         byte4?: number,
       ) =>
         RegisterOrMemoryAndRegisterInstructions.getInstructionInfo(
-          INSTRUCTIONS.ADD.mnemonic,
+          Instructions.Add.mnemonic,
           byte1,
           byte2,
           byte3,
@@ -528,7 +539,7 @@ export const INSTRUCTIONS = {
         byte6?: number,
       ) =>
         ImmediateAndRegisterOrMemoryArithmeticInstructions.getInstructionInfo(
-          INSTRUCTIONS.ADD.mnemonic,
+          Instructions.Add.mnemonic,
           byte1,
           byte2,
           byte3,
@@ -542,7 +553,7 @@ export const INSTRUCTIONS = {
       test: (byte1: number) => (byte1 & 0b11111110) >>> 1 === 0b0000010,
       getInstructionInfo: (byte1: number, byte2: number, byte3?: number) =>
         ImmediateAndAccumulatorArithmeticInstructions.getInstructionInfo(
-          INSTRUCTIONS.ADD.mnemonic,
+          Instructions.Add.mnemonic,
           byte1,
           byte2,
           byte3,
@@ -550,7 +561,7 @@ export const INSTRUCTIONS = {
     },
   },
 
-  SUBTRACT: {
+  Subtract: {
     mnemonic: "sub",
 
     RegisterOrMemoryAndRegisterToEither: {
@@ -562,7 +573,7 @@ export const INSTRUCTIONS = {
         byte4?: number,
       ) =>
         RegisterOrMemoryAndRegisterInstructions.getInstructionInfo(
-          INSTRUCTIONS.SUBTRACT.mnemonic,
+          Instructions.Subtract.mnemonic,
           byte1,
           byte2,
           byte3,
@@ -583,7 +594,7 @@ export const INSTRUCTIONS = {
         byte6?: number,
       ) =>
         ImmediateAndRegisterOrMemoryArithmeticInstructions.getInstructionInfo(
-          INSTRUCTIONS.SUBTRACT.mnemonic,
+          Instructions.Subtract.mnemonic,
           byte1,
           byte2,
           byte3,
@@ -597,7 +608,7 @@ export const INSTRUCTIONS = {
       test: (byte1: number) => (byte1 & 0b11111110) >>> 1 === 0b0010110,
       getInstructionInfo: (byte1: number, byte2: number, byte3?: number) =>
         ImmediateAndAccumulatorArithmeticInstructions.getInstructionInfo(
-          INSTRUCTIONS.SUBTRACT.mnemonic,
+          Instructions.Subtract.mnemonic,
           byte1,
           byte2,
           byte3,
@@ -605,7 +616,7 @@ export const INSTRUCTIONS = {
     },
   },
 
-  COMPARE: {
+  Compare: {
     mnemonic: "cmp",
 
     RegisterOrMemoryAndRegister: {
@@ -617,7 +628,7 @@ export const INSTRUCTIONS = {
         byte4?: number,
       ) =>
         RegisterOrMemoryAndRegisterInstructions.getInstructionInfo(
-          INSTRUCTIONS.COMPARE.mnemonic,
+          Instructions.Compare.mnemonic,
           byte1,
           byte2,
           byte3,
@@ -638,7 +649,7 @@ export const INSTRUCTIONS = {
         byte6?: number,
       ) =>
         ImmediateAndRegisterOrMemoryArithmeticInstructions.getInstructionInfo(
-          INSTRUCTIONS.COMPARE.mnemonic,
+          Instructions.Compare.mnemonic,
           byte1,
           byte2,
           byte3,
@@ -652,10 +663,214 @@ export const INSTRUCTIONS = {
       test: (byte1: number) => (byte1 & 0b11111110) >>> 1 === 0b0011110,
       getInstructionInfo: (byte1: number, byte2: number, byte3?: number) =>
         ImmediateAndAccumulatorArithmeticInstructions.getInstructionInfo(
-          INSTRUCTIONS.COMPARE.mnemonic,
+          Instructions.Compare.mnemonic,
           byte1,
           byte2,
           byte3,
+        ),
+    },
+  },
+
+  Jump: {
+    OnEqual: {
+      mnemonic: "je",
+      test: (byte1: number) => byte1 === 0b01110100,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnEqual.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnLess: {
+      mnemonic: "jl",
+      test: (byte1: number) => byte1 === 0b01111100,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnLess.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnLessOrEqual: {
+      mnemonic: "jle",
+      test: (byte1: number) => byte1 === 0b01111110,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnLessOrEqual.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnBelow: {
+      mnemonic: "jb",
+      test: (byte1: number) => byte1 === 0b01110010,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnBelow.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnBelowOrEqual: {
+      mnemonic: "jbe",
+      test: (byte1: number) => byte1 === 0b01110110,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnBelowOrEqual.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnParity: {
+      mnemonic: "jp",
+      test: (byte1: number) => byte1 === 0b01111010,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnParity.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnOverflow: {
+      mnemonic: "jo",
+      test: (byte1: number) => byte1 === 0b01110000,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnOverflow.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnSign: {
+      mnemonic: "js",
+      test: (byte1: number) => byte1 === 0b01111000,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnSign.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnNotEqual: {
+      mnemonic: "jne",
+      test: (byte1: number) => byte1 === 0b01110101,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnNotEqual.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnNotLess: {
+      mnemonic: "jnl",
+      test: (byte1: number) => byte1 === 0b01111101,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnNotLess.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnNotLessOrEqual: {
+      mnemonic: "jnle",
+      test: (byte1: number) => byte1 === 0b01111111,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnNotLessOrEqual.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnNotBelow: {
+      mnemonic: "jnb",
+      test: (byte1: number) => byte1 === 0b01110011,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnNotBelow.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnNotBelowOrEqual: {
+      mnemonic: "jnbe",
+      test: (byte1: number) => byte1 === 0b01110111,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnNotBelowOrEqual.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnNotPar: {
+      mnemonic: "jnp",
+      test: (byte1: number) => byte1 === 0b01111011,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnNotPar.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnNotOverflow: {
+      mnemonic: "jno",
+      test: (byte1: number) => byte1 === 0b01110001,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnNotOverflow.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnNotSign: {
+      mnemonic: "jns",
+      test: (byte1: number) => byte1 === 0b01111001,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnNotSign.mnemonic,
+          byte2,
+        ),
+    },
+
+    OnCxZero: {
+      mnemonic: "jcxz",
+      test: (byte1: number) => byte1 === 0b11100011,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Jump.OnCxZero.mnemonic,
+          byte2,
+        ),
+    },
+  },
+
+  Loop: {
+    CxTimes: {
+      mnemonic: "loop",
+      test: (byte1: number) => byte1 === 0b11100010,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Loop.CxTimes.mnemonic,
+          byte2,
+        ),
+    },
+
+    WhileZero: {
+      mnemonic: "loopz",
+      test: (byte1: number) => byte1 === 0b11100001,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Loop.WhileZero.mnemonic,
+          byte2,
+        ),
+    },
+
+    WhileNotZero: {
+      mnemonic: "loopnz",
+      test: (byte1: number) => byte1 === 0b11100000,
+      getInstructionInfo: (byte2: number) =>
+        JumpAndLoopInstructionUtils.getInstructionInfo(
+          Instructions.Loop.WhileNotZero.mnemonic,
+          byte2,
         ),
     },
   },
@@ -669,18 +884,21 @@ export const getInstructionInfoFromUnknownCode = (
   byte5?: number,
   byte6?: number,
 ): { assemblyText: string; numOfBytes: number } => {
-  const { MOVE, ADD, SUBTRACT, COMPARE } = INSTRUCTIONS;
+  const { Move, Add, Subtract, Compare, Jump, Loop } = Instructions;
 
-  if (MOVE.RegisterOrMemoryToOrFromRegister.test(byte1)) {
-    return MOVE.RegisterOrMemoryToOrFromRegister.getInstructionInfo(
+  /* vvv === Move Instructions === vvv */
+  //#region
+
+  if (Move.RegisterOrMemoryToOrFromRegister.test(byte1)) {
+    return Move.RegisterOrMemoryToOrFromRegister.getInstructionInfo(
       byte1,
       byte2,
       byte3,
       byte4,
     );
   }
-  if (MOVE.ImmediateToRegisterOrMemory.test(byte1, byte2)) {
-    return MOVE.ImmediateToRegisterOrMemory.getInstructionInfo(
+  if (Move.ImmediateToRegisterOrMemory.test(byte1, byte2)) {
+    return Move.ImmediateToRegisterOrMemory.getInstructionInfo(
       byte1,
       byte2,
       byte3 as number,
@@ -689,24 +907,30 @@ export const getInstructionInfoFromUnknownCode = (
       byte6,
     );
   }
-  if (MOVE.ImmediateToRegister.test(byte1)) {
-    return MOVE.ImmediateToRegister.getInstructionInfo(
+  if (Move.ImmediateToRegister.test(byte1)) {
+    return Move.ImmediateToRegister.getInstructionInfo(
       byte1,
       byte2,
       byte3,
     );
   }
 
-  if (ADD.RegisterOrMemoryWithRegisterToEither.test(byte1)) {
-    return ADD.RegisterOrMemoryWithRegisterToEither.getInstructionInfo(
+  //#endregion
+  /* ^^^ === Move Instructions === ^^^ */
+
+  /* vvv === Add Instructions === vvv */
+  //#region
+
+  if (Add.RegisterOrMemoryWithRegisterToEither.test(byte1)) {
+    return Add.RegisterOrMemoryWithRegisterToEither.getInstructionInfo(
       byte1,
       byte2,
       byte3,
       byte4,
     );
   }
-  if (ADD.ImmediateToRegisterOrMemory.test(byte1, byte2)) {
-    return ADD.ImmediateToRegisterOrMemory.getInstructionInfo(
+  if (Add.ImmediateToRegisterOrMemory.test(byte1, byte2)) {
+    return Add.ImmediateToRegisterOrMemory.getInstructionInfo(
       byte1,
       byte2,
       byte3 as number,
@@ -715,24 +939,30 @@ export const getInstructionInfoFromUnknownCode = (
       byte6,
     );
   }
-  if (ADD.ImmediateToAccumulator.test(byte1)) {
-    return ADD.ImmediateToAccumulator.getInstructionInfo(
+  if (Add.ImmediateToAccumulator.test(byte1)) {
+    return Add.ImmediateToAccumulator.getInstructionInfo(
       byte1,
       byte2,
       byte3,
     );
   }
 
-  if (SUBTRACT.RegisterOrMemoryAndRegisterToEither.test(byte1)) {
-    return SUBTRACT.RegisterOrMemoryAndRegisterToEither.getInstructionInfo(
+  //#endregion
+  /* ^^^ === Add Instructions === ^^^ */
+
+  /* vvv === Subtract Instructions === vvv */
+  //#region
+
+  if (Subtract.RegisterOrMemoryAndRegisterToEither.test(byte1)) {
+    return Subtract.RegisterOrMemoryAndRegisterToEither.getInstructionInfo(
       byte1,
       byte2,
       byte3,
       byte4,
     );
   }
-  if (SUBTRACT.ImmediateFromRegisterOrMemory.test(byte1, byte2)) {
-    return SUBTRACT.ImmediateFromRegisterOrMemory.getInstructionInfo(
+  if (Subtract.ImmediateFromRegisterOrMemory.test(byte1, byte2)) {
+    return Subtract.ImmediateFromRegisterOrMemory.getInstructionInfo(
       byte1,
       byte2,
       byte3 as number,
@@ -741,24 +971,30 @@ export const getInstructionInfoFromUnknownCode = (
       byte6,
     );
   }
-  if (SUBTRACT.ImmediateFromAccumulator.test(byte1)) {
-    return SUBTRACT.ImmediateFromAccumulator.getInstructionInfo(
+  if (Subtract.ImmediateFromAccumulator.test(byte1)) {
+    return Subtract.ImmediateFromAccumulator.getInstructionInfo(
       byte1,
       byte2,
       byte3,
     );
   }
 
-  if (COMPARE.RegisterOrMemoryAndRegister.test(byte1)) {
-    return COMPARE.RegisterOrMemoryAndRegister.getInstructionInfo(
+  //#endregion
+  /* ^^^ === Subtract Instructions === ^^^ */
+
+  /* vvv === Compare Instructions === vvv */
+  //#region
+
+  if (Compare.RegisterOrMemoryAndRegister.test(byte1)) {
+    return Compare.RegisterOrMemoryAndRegister.getInstructionInfo(
       byte1,
       byte2,
       byte3,
       byte4,
     );
   }
-  if (COMPARE.ImmediateWithRegisterOrMemory.test(byte1, byte2)) {
-    return COMPARE.ImmediateWithRegisterOrMemory.getInstructionInfo(
+  if (Compare.ImmediateWithRegisterOrMemory.test(byte1, byte2)) {
+    return Compare.ImmediateWithRegisterOrMemory.getInstructionInfo(
       byte1,
       byte2,
       byte3 as number,
@@ -767,13 +1003,108 @@ export const getInstructionInfoFromUnknownCode = (
       byte6,
     );
   }
-  if (COMPARE.ImmediateWithAccumulator.test(byte1)) {
-    return COMPARE.ImmediateWithAccumulator.getInstructionInfo(
+  if (Compare.ImmediateWithAccumulator.test(byte1)) {
+    return Compare.ImmediateWithAccumulator.getInstructionInfo(
       byte1,
       byte2,
       byte3,
     );
   }
+
+  //#endregion
+  /* ^^^ === Compare Instructions === ^^^ */
+
+  /* vvv === Jump Instructions === vvv */
+  //#region
+
+  if (Jump.OnEqual.test(byte1)) {
+    return Jump.OnEqual.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnLess.test(byte1)) {
+    return Jump.OnLess.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnLessOrEqual.test(byte1)) {
+    return Jump.OnLessOrEqual.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnBelow.test(byte1)) {
+    return Jump.OnBelow.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnBelowOrEqual.test(byte1)) {
+    return Jump.OnBelowOrEqual.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnParity.test(byte1)) {
+    return Jump.OnParity.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnOverflow.test(byte1)) {
+    return Jump.OnOverflow.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnSign.test(byte1)) {
+    return Jump.OnSign.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnNotEqual.test(byte1)) {
+    return Jump.OnNotEqual.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnNotLess.test(byte1)) {
+    return Jump.OnNotLess.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnNotLessOrEqual.test(byte1)) {
+    return Jump.OnNotLessOrEqual.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnNotBelow.test(byte1)) {
+    return Jump.OnNotBelow.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnNotBelowOrEqual.test(byte1)) {
+    return Jump.OnNotBelowOrEqual.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnNotPar.test(byte1)) {
+    return Jump.OnNotPar.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnNotOverflow.test(byte1)) {
+    return Jump.OnNotOverflow.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnNotSign.test(byte1)) {
+    return Jump.OnNotSign.getInstructionInfo(byte2);
+  }
+
+  if (Jump.OnCxZero.test(byte1)) {
+    return Jump.OnCxZero.getInstructionInfo(byte2);
+  }
+
+  //#endregion
+  /* ^^^ === Jump Instructions === ^^^ */
+
+  /* vvv === Loop Instructions === vvv */
+  //#region
+
+  if (Loop.CxTimes.test(byte1)) {
+    return Loop.CxTimes.getInstructionInfo(byte2);
+  }
+
+  if (Loop.WhileZero.test(byte1)) {
+    return Loop.WhileZero.getInstructionInfo(byte2);
+  }
+
+  if (Loop.WhileNotZero.test(byte1)) {
+    return Loop.WhileNotZero.getInstructionInfo(byte2);
+  }
+
+  //#endregion
+  /* ^^^ === Loop Instructions === ^^^ */
 
   return { assemblyText: "invalidByte", numOfBytes: 1 };
 };

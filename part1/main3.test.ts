@@ -1,6 +1,6 @@
 import { describe, it } from "jsr:@std/testing/bdd";
 import { expect } from "jsr:@std/expect";
-import { getInstructionInfoFromUnknownCode, INSTRUCTIONS } from "./main3.ts";
+import { getInstructionInfoFromUnknownCode, Instructions } from "./main3.ts";
 
 describe("INSTRUCTIONS", () => {
   describe("MOVE", () => {
@@ -10,13 +10,13 @@ describe("INSTRUCTIONS", () => {
           it("works for d", () => {
             const byte2 = 0b11_100_111;
 
-            const { assemblyText: destination0 } = INSTRUCTIONS.MOVE
+            const { assemblyText: destination0 } = Instructions.Move
               .RegisterOrMemoryToOrFromRegister.getInstructionInfo(
                 0b100010_0_1,
                 byte2,
               );
 
-            const { assemblyText: destination1 } = INSTRUCTIONS.MOVE
+            const { assemblyText: destination1 } = Instructions.Move
               .RegisterOrMemoryToOrFromRegister.getInstructionInfo(
                 0b100010_1_1,
                 byte2,
@@ -29,13 +29,13 @@ describe("INSTRUCTIONS", () => {
           it("works for w", () => {
             const byte2 = 0b11_100_111;
 
-            const { assemblyText: width0 } = INSTRUCTIONS.MOVE
+            const { assemblyText: width0 } = Instructions.Move
               .RegisterOrMemoryToOrFromRegister.getInstructionInfo(
                 0b100010_1_0,
                 byte2,
               );
 
-            const { assemblyText: width1 } = INSTRUCTIONS.MOVE
+            const { assemblyText: width1 } = Instructions.Move
               .RegisterOrMemoryToOrFromRegister.getInstructionInfo(
                 0b100010_1_1,
                 byte2,
@@ -48,20 +48,20 @@ describe("INSTRUCTIONS", () => {
           it("works for mod", () => {
             const byte1 = 0b100010_1_0;
 
-            const { assemblyText: mod0 } = INSTRUCTIONS.MOVE
+            const { assemblyText: mod0 } = Instructions.Move
               .RegisterOrMemoryToOrFromRegister.getInstructionInfo(
                 byte1,
                 0b00_100_111,
               );
 
-            const { assemblyText: mod1 } = INSTRUCTIONS.MOVE
+            const { assemblyText: mod1 } = Instructions.Move
               .RegisterOrMemoryToOrFromRegister.getInstructionInfo(
                 byte1,
                 0b01_100_111,
                 0b00101000, // 40
               );
 
-            const { assemblyText: mod2 } = INSTRUCTIONS.MOVE
+            const { assemblyText: mod2 } = Instructions.Move
               .RegisterOrMemoryToOrFromRegister.getInstructionInfo(
                 byte1,
                 0b10_100_111,
@@ -69,7 +69,7 @@ describe("INSTRUCTIONS", () => {
                 0b00000001, // 296
               );
 
-            const { assemblyText: mod3 } = INSTRUCTIONS.MOVE
+            const { assemblyText: mod3 } = Instructions.Move
               .RegisterOrMemoryToOrFromRegister.getInstructionInfo(
                 byte1,
                 0b11_100_111,
@@ -82,7 +82,7 @@ describe("INSTRUCTIONS", () => {
           });
 
           it("works for immediate value", () => {
-            const { assemblyText } = INSTRUCTIONS.MOVE
+            const { assemblyText } = Instructions.Move
               .RegisterOrMemoryToOrFromRegister.getInstructionInfo(
                 0b100010_1_0,
                 0b00_100_110,
@@ -94,14 +94,14 @@ describe("INSTRUCTIONS", () => {
         });
 
         it("gets the correct number of bytes", () => {
-          const { numOfBytes: numOfBytes2 } = INSTRUCTIONS.MOVE
+          const { numOfBytes: numOfBytes2 } = Instructions.Move
             .RegisterOrMemoryToOrFromRegister.getInstructionInfo(
               0b100010_0_1,
               0b11_100_111,
             );
           expect(numOfBytes2).toBe(2);
 
-          const { numOfBytes: numOfBytes3 } = INSTRUCTIONS.MOVE
+          const { numOfBytes: numOfBytes3 } = Instructions.Move
             .RegisterOrMemoryToOrFromRegister.getInstructionInfo(
               0b100010_1_0,
               0b01_100_111,
@@ -109,7 +109,7 @@ describe("INSTRUCTIONS", () => {
             );
           expect(numOfBytes3).toBe(3);
 
-          const { numOfBytes: numOfBytes4 } = INSTRUCTIONS.MOVE
+          const { numOfBytes: numOfBytes4 } = Instructions.Move
             .RegisterOrMemoryToOrFromRegister.getInstructionInfo(
               0b100010_1_0,
               0b10_100_111,
@@ -127,7 +127,7 @@ describe("INSTRUCTIONS", () => {
           it("works for w", () => {
             const byte2 = 0b11_000_111;
 
-            const { assemblyText: width0 } = INSTRUCTIONS.MOVE
+            const { assemblyText: width0 } = Instructions.Move
               .ImmediateToRegisterOrMemory.getInstructionInfo(
                 0b1100010_0,
                 byte2,
@@ -135,7 +135,7 @@ describe("INSTRUCTIONS", () => {
               );
             expect(width0).toBe("mov bh, 40");
 
-            const { assemblyText: width1 } = INSTRUCTIONS.MOVE
+            const { assemblyText: width1 } = Instructions.Move
               .ImmediateToRegisterOrMemory.getInstructionInfo(
                 0b1100010_1,
                 byte2,
@@ -148,7 +148,7 @@ describe("INSTRUCTIONS", () => {
           it("works for mod", () => {
             const byte1 = 0b1100010_0;
 
-            const { assemblyText: mod0 } = INSTRUCTIONS.MOVE
+            const { assemblyText: mod0 } = Instructions.Move
               .ImmediateToRegisterOrMemory.getInstructionInfo(
                 byte1,
                 0b00_000_111,
@@ -156,7 +156,7 @@ describe("INSTRUCTIONS", () => {
               );
             expect(mod0).toBe("mov [bx], byte 40");
 
-            const { assemblyText: mod1 } = INSTRUCTIONS.MOVE
+            const { assemblyText: mod1 } = Instructions.Move
               .ImmediateToRegisterOrMemory.getInstructionInfo(
                 byte1,
                 0b01_000_111,
@@ -165,7 +165,7 @@ describe("INSTRUCTIONS", () => {
               );
             expect(mod1).toBe("mov [bx + 1], byte 40");
 
-            const { assemblyText: mod2 } = INSTRUCTIONS.MOVE
+            const { assemblyText: mod2 } = Instructions.Move
               .ImmediateToRegisterOrMemory.getInstructionInfo(
                 byte1,
                 0b10_000_111,
@@ -175,7 +175,7 @@ describe("INSTRUCTIONS", () => {
               );
             expect(mod2).toBe("mov [bx + 257], byte 40");
 
-            const { assemblyText: mod3 } = INSTRUCTIONS.MOVE
+            const { assemblyText: mod3 } = Instructions.Move
               .ImmediateToRegisterOrMemory.getInstructionInfo(
                 byte1,
                 0b11_000_111,
