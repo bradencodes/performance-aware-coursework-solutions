@@ -226,21 +226,54 @@ const ImmediateAndRegisterOrMemoryArithmeticInstructions = {
     byte6?: number,
   ) => {
     const s = (byte1 && 0b00000010) >>> 1;
+    const w = byte1 & 0b00000001;
+    const mod = (byte2 & 0b11000000) >>> 6;
+    const rm = byte2 & 0b00000111;
 
-    const { w, mod, rm, disp, data: initialData, numOfBytes } =
-      ImmediateAndRegisterOrMemoryInstructions.getParts(
-        byte1,
-        byte2,
-        byte3,
-        byte4,
-        byte5,
-        byte6,
-      );
+    const hasDispLo = MODE.getHasDispLo(mod, rm);
+    const hasDispHi = MODE.getHasDispHi(mod, rm);
+
+    const disp = (() => {
+      if (!hasDispLo) return undefined; // no displacement
+
+      if (hasDispHi) return (byte4 as number << 8) | byte3 as number; // 16-bit displacement
+
+      return byte3; // 8-bit displacement
+    })();
+
+    const isData8bit = w === 0b0 || s === 0b1;
 
     const data = (() => {
-      if (s === 0b1 && w === 0b1) return initialData << 8 >> 8; // sign extend
+      const dataLo = (() => {
+        if (hasDispHi) return byte5 as number;
+        if (hasDispLo) return byte4 as number;
+        return byte3 as number;
+      })();
 
-      return initialData; // no sign extension
+      const dataHi = (() => {
+        if (hasDispHi) return byte6 as number;
+        if (hasDispLo) return byte5 as number;
+        return byte4 as number;
+      })();
+
+      if (isData8bit) return dataLo;
+
+      return (dataHi << 8) | dataLo;
+    })();
+
+    const numOfBytes = (() => {
+      if (!hasDispLo) {
+        if (isData8bit) return 3;
+        return 4;
+      }
+
+      if (hasDispHi) {
+        if (isData8bit) return 5;
+        return 6;
+      }
+
+      if (isData8bit) return 4;
+      return 5;
     })();
 
     return { s, w, mod, rm, disp, data, numOfBytes };
