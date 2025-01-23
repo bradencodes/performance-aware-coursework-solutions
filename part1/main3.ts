@@ -202,6 +202,63 @@ const getRmString = (
   return getRegisterName(w, rm); // Register Mode
 };
 
+const getAssemblyTextForRegisterOrMemoryToOrFromRegisterInstructions = (
+  { d, w, mod, reg, rm, disp, mnemonic }: {
+    d: number;
+    w: number;
+    mod: number;
+    reg: number;
+    rm: number;
+    disp?: number;
+    mnemonic: string;
+  },
+) => {
+  const registerName = getRegisterName(w, reg);
+
+  const rmString = getRmString({ w, mod, rm, disp });
+
+  const destination = d ? registerName : rmString;
+  const source = !d ? registerName : rmString;
+
+  return `${mnemonic} ${destination}, ${source}`;
+};
+
+const getInstructionInfoForRegisterOrMemoryToOrFromRegisterInstructions = (
+  mnemonic: string,
+  byte1: number,
+  byte2: number,
+  byte3?: number,
+  byte4?: number,
+) => {
+  const {
+    d,
+    w,
+    mod,
+    reg,
+    rm,
+    disp,
+    numOfBytes,
+  } = getPartsForRegisterOrMemoryToOrFromRegisterInstructions(
+    byte1,
+    byte2,
+    byte3,
+    byte4,
+  );
+
+  const assemblyText =
+    getAssemblyTextForRegisterOrMemoryToOrFromRegisterInstructions({
+      d,
+      w,
+      mod,
+      reg,
+      rm,
+      disp,
+      mnemonic,
+    });
+
+  return { assemblyText, numOfBytes };
+};
+
 export const INSTRUCTIONS = {
   MOVE: {
     RegisterOrMemoryToOrFromRegister: {
@@ -211,35 +268,14 @@ export const INSTRUCTIONS = {
         byte2: number,
         byte3?: number,
         byte4?: number,
-      ) => {
-        const {
-          d,
-          w,
-          mod,
-          reg,
-          rm,
-          disp,
-          numOfBytes,
-        } = getPartsForRegisterOrMemoryToOrFromRegisterInstructions(
+      ) =>
+        getInstructionInfoForRegisterOrMemoryToOrFromRegisterInstructions(
+          "mov",
           byte1,
           byte2,
           byte3,
           byte4,
-        );
-
-        const assemblyText = (() => {
-          const registerName = getRegisterName(w, reg);
-
-          const rmString = getRmString({ w, mod, rm, disp });
-
-          const destination = d ? registerName : rmString;
-          const source = !d ? registerName : rmString;
-
-          return `mov ${destination}, ${source}`;
-        })();
-
-        return { assemblyText, numOfBytes };
-      },
+        ),
     },
     ImmediateToRegisterOrMemory: {
       test: (byte1: number, byte2: number) =>
@@ -274,23 +310,34 @@ export const INSTRUCTIONS = {
     },
     ImmediateToRegister: {
       test: (byte1: number) => (byte1 & 0b11110000) >>> 4 === 0b1011,
-      getParts: (byte1: number, byte2: number, byte3?: number) => {
-        const w = (byte1 & 0b00001000) >>> 3;
-        const reg = byte1 & 0b00000111;
+      getInstructionInfo: (byte1: number, byte2: number, byte3?: number) => {
+        const getParts = (byte1: number, byte2: number, byte3?: number) => {
+          const w = (byte1 & 0b00001000) >>> 3;
+          const reg = byte1 & 0b00000111;
 
-        const is8bit = WIDTH.getIs8bit(w);
+          const is8bit = WIDTH.getIs8bit(w);
 
-        const data = (() => {
-          if (is8bit) {
-            return byte2;
-          }
+          const data = (() => {
+            if (is8bit) {
+              return byte2;
+            }
 
-          return (byte3 as number << 8) | byte2;
+            return (byte3 as number << 8) | byte2;
+          })();
+
+          const numOfBytes = is8bit ? 2 : 3;
+
+          return { w, reg, data, numOfBytes };
+        };
+        const { w, reg, data, numOfBytes } = getParts(byte1, byte2, byte3);
+
+        const assemblyText = (() => {
+          const registerName = getRegisterName(w, reg);
+
+          return `mov ${registerName}, ${data}`;
         })();
 
-        const numOfBytes = is8bit ? 2 : 3;
-
-        return { w, reg, data, numOfBytes };
+        return { assemblyText, numOfBytes };
       },
     },
   },
@@ -298,7 +345,19 @@ export const INSTRUCTIONS = {
   ADD: {
     RegisterOrMemoryWithRegisterToEither: {
       test: (byte1: number) => (byte1 & 0b11111100) >>> 2 === 0b000000,
-      getParts: getPartsForRegisterOrMemoryToOrFromRegisterInstructions,
+      getInstructionInfo: (
+        byte1: number,
+        byte2: number,
+        byte3?: number,
+        byte4?: number,
+      ) =>
+        getInstructionInfoForRegisterOrMemoryToOrFromRegisterInstructions(
+          "add",
+          byte1,
+          byte2,
+          byte3,
+          byte4,
+        ),
     },
     ImmediateToRegisterOrMemory: {
       test: (byte1: number, byte2: number) =>
@@ -315,7 +374,19 @@ export const INSTRUCTIONS = {
   SUBTRACT: {
     RegisterOrMemoryAndRegisterToEither: {
       test: (byte1: number) => (byte1 & 0b11111100) >>> 2 === 0b001010,
-      getParts: getPartsForRegisterOrMemoryToOrFromRegisterInstructions,
+      getInstructionInfo: (
+        byte1: number,
+        byte2: number,
+        byte3?: number,
+        byte4?: number,
+      ) =>
+        getInstructionInfoForRegisterOrMemoryToOrFromRegisterInstructions(
+          "sub",
+          byte1,
+          byte2,
+          byte3,
+          byte4,
+        ),
     },
     ImmediateFromRegisterOrMemory: {
       test: (byte1: number, byte2: number) =>
@@ -332,7 +403,19 @@ export const INSTRUCTIONS = {
   COMPARE: {
     RegisterOrMemoryAndRegister: {
       test: (byte1: number) => (byte1 & 0b11111100) >>> 2 === 0b001110,
-      getParts: getPartsForRegisterOrMemoryToOrFromRegisterInstructions,
+      getInstructionInfo: (
+        byte1: number,
+        byte2: number,
+        byte3?: number,
+        byte4?: number,
+      ) =>
+        getInstructionInfoForRegisterOrMemoryToOrFromRegisterInstructions(
+          "cmp",
+          byte1,
+          byte2,
+          byte3,
+          byte4,
+        ),
     },
     ImmediateWithRegisterOrMemory: {
       test: (byte1: number, byte2: number) =>
