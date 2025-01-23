@@ -177,7 +177,17 @@ const ImmediateAndRegisterOrMemoryInstructions = {
   ) => {
     const rmString = getRmString({ w, mod, rm, disp });
 
-    return `${mnemonic} ${rmString}, ${data}`;
+    const widthPrefix = (() => {
+      if (mod === 0b11) return null;
+
+      if (w === 0b1) return "word";
+
+      return "byte";
+    })();
+
+    return `${mnemonic} ${rmString}, ${
+      widthPrefix ? `${widthPrefix} ` : ""
+    }${data}`;
   },
 
   getInstructionInfo: (

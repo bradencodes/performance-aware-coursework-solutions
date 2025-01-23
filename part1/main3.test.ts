@@ -154,7 +154,7 @@ describe("INSTRUCTIONS", () => {
                 0b00_000_111,
                 0b00101000, // 40
               );
-            expect(mod0).toBe("mov [bx], 40");
+            expect(mod0).toBe("mov [bx], byte 40");
 
             const { assemblyText: mod1 } = INSTRUCTIONS.MOVE
               .ImmediateToRegisterOrMemory.getInstructionInfo(
@@ -163,7 +163,7 @@ describe("INSTRUCTIONS", () => {
                 0b00000001, // 1
                 0b00101000, // 40
               );
-            expect(mod1).toBe("mov [bx + 1], 40");
+            expect(mod1).toBe("mov [bx + 1], byte 40");
 
             const { assemblyText: mod2 } = INSTRUCTIONS.MOVE
               .ImmediateToRegisterOrMemory.getInstructionInfo(
@@ -173,7 +173,7 @@ describe("INSTRUCTIONS", () => {
                 0b00000001, // +256 = 257
                 0b00101000, // 40
               );
-            expect(mod2).toBe("mov [bx + 257], 40");
+            expect(mod2).toBe("mov [bx + 257], byte 40");
 
             const { assemblyText: mod3 } = INSTRUCTIONS.MOVE
               .ImmediateToRegisterOrMemory.getInstructionInfo(
