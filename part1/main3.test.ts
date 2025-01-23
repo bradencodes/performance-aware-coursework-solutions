@@ -120,5 +120,71 @@ describe("INSTRUCTIONS", () => {
         });
       });
     });
+
+    describe("ImmediateToRegisterOrMemory", () => {
+      describe("getInstructionInfo()", () => {
+        describe("gets the correct assembly text", () => {
+          it("works for w", () => {
+            const byte2 = 0b11_000_111;
+
+            const { assemblyText: width0 } = INSTRUCTIONS.MOVE
+              .ImmediateToRegisterOrMemory.getInstructionInfo(
+                0b1100010_0,
+                byte2,
+                0b00101000, // 40
+              );
+            expect(width0).toBe("mov bh, 40");
+
+            const { assemblyText: width1 } = INSTRUCTIONS.MOVE
+              .ImmediateToRegisterOrMemory.getInstructionInfo(
+                0b1100010_1,
+                byte2,
+                0b00101000,
+                0b00000001, // 296
+              );
+            expect(width1).toBe("mov di, 296");
+          });
+
+          it("works for mod", () => {
+            const byte1 = 0b1100010_0;
+
+            const { assemblyText: mod0 } = INSTRUCTIONS.MOVE
+              .ImmediateToRegisterOrMemory.getInstructionInfo(
+                byte1,
+                0b00_000_111,
+                0b00101000, // 40
+              );
+            expect(mod0).toBe("mov [bx], 40");
+
+            const { assemblyText: mod1 } = INSTRUCTIONS.MOVE
+              .ImmediateToRegisterOrMemory.getInstructionInfo(
+                byte1,
+                0b01_000_111,
+                0b00000001, // 1
+                0b00101000, // 40
+              );
+            expect(mod1).toBe("mov [bx + 1], 40");
+
+            const { assemblyText: mod2 } = INSTRUCTIONS.MOVE
+              .ImmediateToRegisterOrMemory.getInstructionInfo(
+                byte1,
+                0b10_000_111,
+                0b00000001, // 1
+                0b00000001, // +256 = 257
+                0b00101000, // 40
+              );
+            expect(mod2).toBe("mov [bx + 257], 40");
+
+            const { assemblyText: mod3 } = INSTRUCTIONS.MOVE
+              .ImmediateToRegisterOrMemory.getInstructionInfo(
+                byte1,
+                0b11_000_111,
+                0b00101000, // 40
+              );
+            expect(mod3).toBe("mov bh, 40");
+          });
+        });
+      });
+    });
   });
 });

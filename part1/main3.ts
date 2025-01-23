@@ -147,6 +147,61 @@ const getPartsForImmediateAndAccumulatorArithmeticInstructions = (
   return { w, data };
 };
 
+const getRegisterName = (w: number, registerCode: number) => {
+  const regsiterNameMap = [new Array(8), new Array(8)];
+  regsiterNameMap[0][0b000] = "al";
+  regsiterNameMap[0][0b001] = "cl";
+  regsiterNameMap[0][0b010] = "dl";
+  regsiterNameMap[0][0b011] = "bl";
+  regsiterNameMap[0][0b100] = "ah";
+  regsiterNameMap[0][0b101] = "ch";
+  regsiterNameMap[0][0b110] = "dh";
+  regsiterNameMap[0][0b111] = "bh";
+
+  regsiterNameMap[1][0b000] = "ax";
+  regsiterNameMap[1][0b001] = "cx";
+  regsiterNameMap[1][0b010] = "dx";
+  regsiterNameMap[1][0b011] = "bx";
+  regsiterNameMap[1][0b100] = "sp";
+  regsiterNameMap[1][0b101] = "bp";
+  regsiterNameMap[1][0b110] = "si";
+  regsiterNameMap[1][0b111] = "di";
+
+  return regsiterNameMap[w][registerCode];
+};
+
+const getRmString = (
+  { w, mod, rm, disp }: { w: number; mod: number; rm: number; disp?: number },
+) => {
+  const getAddressCalculationString = (rm: number) => {
+    const addressCalculationMap = new Array(8);
+    addressCalculationMap[0b000] = "bx + si";
+    addressCalculationMap[0b001] = "bx + di";
+    addressCalculationMap[0b010] = "bp + si";
+    addressCalculationMap[0b011] = "bp + di";
+    addressCalculationMap[0b100] = "si";
+    addressCalculationMap[0b101] = "di";
+    addressCalculationMap[0b110] = "bp";
+    addressCalculationMap[0b111] = "bx";
+
+    return addressCalculationMap[rm];
+  };
+
+  if (mod === 0b00) { // Memory Mode No Displacement (except for Direct Address)
+    if (rm === 0b110) return `[${disp}]`; // Direct Address
+
+    const addressCalculationString = getAddressCalculationString(rm);
+    return `[${addressCalculationString}]`;
+  }
+
+  if (mod === 0b01 || mod == 0b10) { // Memory Mode With Displacement
+    const addressCalculationString = getAddressCalculationString(rm);
+    return `[${addressCalculationString} + ${disp}]`;
+  }
+
+  return getRegisterName(w, rm); // Register Mode
+};
+
 export const INSTRUCTIONS = {
   MOVE: {
     RegisterOrMemoryToOrFromRegister: {
@@ -173,67 +228,14 @@ export const INSTRUCTIONS = {
         );
 
         const assemblyText = (() => {
-          const mnemonic = "mov";
-
-          const getRegisterName = (w: number, registerCode: number) => {
-            const regsiterNameMap = [new Array(8), new Array(8)];
-            regsiterNameMap[0][0b000] = "al";
-            regsiterNameMap[0][0b001] = "cl";
-            regsiterNameMap[0][0b010] = "dl";
-            regsiterNameMap[0][0b011] = "bl";
-            regsiterNameMap[0][0b100] = "ah";
-            regsiterNameMap[0][0b101] = "ch";
-            regsiterNameMap[0][0b110] = "dh";
-            regsiterNameMap[0][0b111] = "bh";
-
-            regsiterNameMap[1][0b000] = "ax";
-            regsiterNameMap[1][0b001] = "cx";
-            regsiterNameMap[1][0b010] = "dx";
-            regsiterNameMap[1][0b011] = "bx";
-            regsiterNameMap[1][0b100] = "sp";
-            regsiterNameMap[1][0b101] = "bp";
-            regsiterNameMap[1][0b110] = "si";
-            regsiterNameMap[1][0b111] = "di";
-
-            return regsiterNameMap[w][registerCode];
-          };
-
           const registerName = getRegisterName(w, reg);
 
-          const rmString = (() => {
-            const getAddressCalculationString = (rm: number) => {
-              const addressCalculationMap = new Array(8);
-              addressCalculationMap[0b000] = "bx + si";
-              addressCalculationMap[0b001] = "bx + di";
-              addressCalculationMap[0b010] = "bp + si";
-              addressCalculationMap[0b011] = "bp + di";
-              addressCalculationMap[0b100] = "si";
-              addressCalculationMap[0b101] = "di";
-              addressCalculationMap[0b110] = "bp";
-              addressCalculationMap[0b111] = "bx";
-
-              return addressCalculationMap[rm];
-            };
-
-            if (mod === 0b00) { // Memory Mode No Displacement (except for Direct Address)
-              if (rm === 0b110) return `[${disp}]`; // Direct Address
-
-              const addressCalculationString = getAddressCalculationString(rm);
-              return `[${addressCalculationString}]`;
-            }
-
-            if (mod === 0b01 || mod == 0b10) { // Memory Mode With Displacement
-              const addressCalculationString = getAddressCalculationString(rm);
-              return `[${addressCalculationString} + ${disp}]`;
-            }
-
-            return getRegisterName(w, rm); // Register Mode
-          })();
+          const rmString = getRmString({ w, mod, rm, disp });
 
           const destination = d ? registerName : rmString;
           const source = !d ? registerName : rmString;
 
-          return `${mnemonic} ${destination}, ${source}`;
+          return `mov ${destination}, ${source}`;
         })();
 
         return { assemblyText, numOfBytes };
@@ -243,7 +245,32 @@ export const INSTRUCTIONS = {
       test: (byte1: number, byte2: number) =>
         (byte1 & 0b11111110) >>> 1 === 0b1100011 &&
         (byte2 & 0b00111000) >>> 3 === 0b000,
-      getParts: getPartsForImmediateToRegisterOrMemoryCommonInstructions,
+      getInstructionInfo: (
+        byte1: number,
+        byte2: number,
+        byte3: number,
+        byte4?: number,
+        byte5?: number,
+        byte6?: number,
+      ) => {
+        const { w, mod, rm, disp, data, numOfBytes } =
+          getPartsForImmediateToRegisterOrMemoryCommonInstructions(
+            byte1,
+            byte2,
+            byte3,
+            byte4,
+            byte5,
+            byte6,
+          );
+
+        const assemblyText = (() => {
+          const rmString = getRmString({ w, mod, rm, disp });
+
+          return `mov ${rmString}, ${data}`;
+        })();
+
+        return { assemblyText, numOfBytes };
+      },
     },
     ImmediateToRegister: {
       test: (byte1: number) => (byte1 & 0b11110000) >>> 4 === 0b1011,
