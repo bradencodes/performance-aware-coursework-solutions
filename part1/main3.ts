@@ -574,6 +574,123 @@ export const INSTRUCTIONS = {
   },
 };
 
+export const getInstructionInfoFromUnknownCode = (
+  byte1: number,
+  byte2: number,
+  byte3?: number,
+  byte4?: number,
+  byte5?: number,
+  byte6?: number,
+) => {
+  const { MOVE, ADD, SUBTRACT, COMPARE } = INSTRUCTIONS;
+
+  if (MOVE.RegisterOrMemoryToOrFromRegister.test(byte1)) {
+    return MOVE.RegisterOrMemoryToOrFromRegister.getInstructionInfo(
+      byte1,
+      byte2,
+      byte3,
+      byte4,
+    );
+  }
+  if (MOVE.ImmediateToRegisterOrMemory.test(byte1, byte2)) {
+    return MOVE.ImmediateToRegisterOrMemory.getInstructionInfo(
+      byte1,
+      byte2,
+      byte3 as number,
+      byte4,
+      byte5,
+      byte6,
+    );
+  }
+  if (MOVE.ImmediateToRegister.test(byte1)) {
+    return MOVE.ImmediateToRegister.getInstructionInfo(
+      byte1,
+      byte2,
+      byte3,
+    );
+  }
+
+  if (ADD.RegisterOrMemoryWithRegisterToEither.test(byte1)) {
+    return ADD.RegisterOrMemoryWithRegisterToEither.getInstructionInfo(
+      byte1,
+      byte2,
+      byte3,
+      byte4,
+    );
+  }
+  if (ADD.ImmediateToRegisterOrMemory.test(byte1, byte2)) {
+    return ADD.ImmediateToRegisterOrMemory.getInstructionInfo(
+      byte1,
+      byte2,
+      byte3 as number,
+      byte4,
+      byte5,
+      byte6,
+    );
+  }
+  // if (ADD.ImmediateToAccumulator.test(byte1)) {
+  //   return ADD.ImmediateToAccumulator.getInstructionInfo(
+  //     byte1,
+  //     byte2,
+  //     byte3
+  //   );
+  // }
+
+  if (SUBTRACT.RegisterOrMemoryAndRegisterToEither.test(byte1)) {
+    return SUBTRACT.RegisterOrMemoryAndRegisterToEither.getInstructionInfo(
+      byte1,
+      byte2,
+      byte3,
+      byte4,
+    );
+  }
+  if (SUBTRACT.ImmediateFromRegisterOrMemory.test(byte1, byte2)) {
+    return SUBTRACT.ImmediateFromRegisterOrMemory.getInstructionInfo(
+      byte1,
+      byte2,
+      byte3 as number,
+      byte4,
+      byte5,
+      byte6,
+    );
+  }
+  // if (SUBTRACT.ImmediateFromAccumulator.test(byte1)) {
+  //   return SUBTRACT.ImmediateFromAccumulator.getInstructionInfo(
+  //     byte1,
+  //     byte2,
+  //     byte3
+  //   );
+  // }
+
+  if (COMPARE.RegisterOrMemoryAndRegister.test(byte1)) {
+    return COMPARE.RegisterOrMemoryAndRegister.getInstructionInfo(
+      byte1,
+      byte2,
+      byte3,
+      byte4,
+    );
+  }
+  if (COMPARE.ImmediateWithRegisterOrMemory.test(byte1, byte2)) {
+    return COMPARE.ImmediateWithRegisterOrMemory.getInstructionInfo(
+      byte1,
+      byte2,
+      byte3 as number,
+      byte4,
+      byte5,
+      byte6,
+    );
+  }
+  // if (COMPARE.ImmediateWithAccumulator.test(byte1)) {
+  //   return COMPARE.ImmediateWithAccumulator.getInstructionInfo(
+  //     byte1,
+  //     byte2,
+  //     byte3
+  //   );
+  // }
+
+  return { assemblyText: "invalidByte", numOfBytes: 1 };
+};
+
 const main = () => {
   const binaryFilePath = parse(Deno.args)._[0];
 
@@ -584,21 +701,28 @@ const main = () => {
   const bytes = Deno.readFileSync(binaryFilePath);
 
   let currentByteIndex = 0;
-  // while (currentByteIndex < bytes.length) {
-  //   const byte1 = bytes[currentByteIndex];
-  //   const byte2 = bytes[currentByteIndex + 1];
-  //   const byte3 = bytes[currentByteIndex + 2];
-  //   const byte4 = bytes[currentByteIndex + 3];
-  //   const byte5 = bytes[currentByteIndex + 4];
-  //   const byte6 = bytes[currentByteIndex + 5];
+  while (currentByteIndex < bytes.length) {
+    const byte1 = bytes[currentByteIndex];
+    const byte2 = bytes[currentByteIndex + 1];
+    const byte3 = bytes[currentByteIndex + 2];
+    const byte4 = bytes[currentByteIndex + 3];
+    const byte5 = bytes[currentByteIndex + 4];
+    const byte6 = bytes[currentByteIndex + 5];
 
-  //   const {
-  //     assemblyText: instructionAssemblyText,
-  //     numOfBytes: numOfBytesForInstruction,
-  //   } = getInstructionInfo(byte1, byte2, byte3, byte4, byte5, byte6);
-  //   assemblyText += `\n${instructionAssemblyText}`;
-  //   currentByteIndex += numOfBytesForInstruction;
-  // }
+    const {
+      assemblyText: instructionAssemblyText,
+      numOfBytes: numOfBytesForInstruction,
+    } = getInstructionInfoFromUnknownCode(
+      byte1,
+      byte2,
+      byte3,
+      byte4,
+      byte5,
+      byte6,
+    );
+    assemblyText += `\n${instructionAssemblyText}`;
+    currentByteIndex += numOfBytesForInstruction;
+  }
 
   return assemblyText;
 };

@@ -1,6 +1,6 @@
 import { describe, it } from "jsr:@std/testing/bdd";
 import { expect } from "jsr:@std/expect";
-import { INSTRUCTIONS } from "./main3.ts";
+import { getInstructionInfoFromUnknownCode, INSTRUCTIONS } from "./main3.ts";
 
 describe("INSTRUCTIONS", () => {
   describe("MOVE", () => {
@@ -186,5 +186,73 @@ describe("INSTRUCTIONS", () => {
         });
       });
     });
+  });
+});
+
+describe("getInstructionInfoFromUnknownCode", () => {
+  it("works for register from memory", () => {
+    expect(getInstructionInfoFromUnknownCode()).toBe("add bx, [bx + si]");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add bx, [bp + 0]");
+  });
+
+  it("works for immediate to register", () => {
+    expect(getInstructionInfoFromUnknownCode()).toBe("add si, 2");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add bp, 2");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add cx, 8");
+  });
+
+  it("works for register from memory with 8-bit displacement", () => {
+    expect(getInstructionInfoFromUnknownCode()).toBe("add bx, [bp + 0]");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add cx, [bx + 2]");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add bh, [bp + si + 4]");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add di, [bp + di + 6]");
+  });
+
+  it("works for register to memory", () => {
+    expect(getInstructionInfoFromUnknownCode()).toBe("add [bx + si], bx");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add [bp], bx");
+  });
+
+  it("works for register to memory with 8-bit displacement", () => {
+    expect(getInstructionInfoFromUnknownCode()).toBe("add [bp + 0], bx");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add [bx + 2], cx");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add [bp + si + 4], bh");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add [bp + di + 6], di");
+  });
+
+  it("works for immediate to register", () => {
+    expect(getInstructionInfoFromUnknownCode()).toBe("add byte [bx], 34");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe(
+      "add word [bp + si + 1000], 29",
+    );
+  });
+
+  it("works for register from memory or register", () => {
+    expect(getInstructionInfoFromUnknownCode()).toBe("add ax, [bp]");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add al, [bx + si]");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add ax, bx");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add al, ah");
+  });
+
+  it("works for immediate to accumulator", () => {
+    expect(getInstructionInfoFromUnknownCode()).toBe("add ax, 1000");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add al, -30");
+
+    expect(getInstructionInfoFromUnknownCode()).toBe("add al, 9");
   });
 });
