@@ -191,17 +191,27 @@ describe("INSTRUCTIONS", () => {
 
 describe("getInstructionInfoFromUnknownCode", () => {
   it("works for register from memory", () => {
-    expect(getInstructionInfoFromUnknownCode()).toBe("add bx, [bx + si]");
+    expect(getInstructionInfoFromUnknownCode(0b00000011, 0b00011000)).toBe(
+      "add bx, [bx + si]",
+    );
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add bx, [bp + 0]");
+    expect(
+      getInstructionInfoFromUnknownCode(0b00000011, 0b01011110, 0b00000000),
+    ).toBe("add bx, [bp + 0]");
   });
 
   it("works for immediate to register", () => {
-    expect(getInstructionInfoFromUnknownCode()).toBe("add si, 2");
+    expect(
+      getInstructionInfoFromUnknownCode(0b10000011, 0b11000110, 0b00000010),
+    ).toBe("add si, 2");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add bp, 2");
+    expect(
+      getInstructionInfoFromUnknownCode(0b10000011, 0b11000101, 0b00000010),
+    ).toBe("add bp, 2");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add cx, 8");
+    expect(
+      getInstructionInfoFromUnknownCode(0b10000011, 0b11000001, 0b00001000),
+    ).toBe("add cx, 8");
   });
 
   it("works for register from memory with 8-bit displacement", () => {

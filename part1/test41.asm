@@ -21,12 +21,9 @@ add ax, [bp + 0]
 add al, [bx + si]
 add ax, bx
 add al, ah
-invalidByte
-invalidByte
-add ax, [si]
-invalidByte
-invalidByte
-invalidByte
+add ax 1000
+add al 226
+add al 9
 sub bx, [bx + si]
 sub bx, [bp + 0]
 sub si, 2
@@ -48,12 +45,9 @@ sub ax, [bp + 0]
 sub al, [bx + si]
 sub ax, bx
 sub al, ah
-invalidByte
-invalidByte
-add bp, [si]
-invalidByte
-invalidByte
-invalidByte
+sub ax 1000
+sub al 226
+sub al 9
 cmp bx, [bx + si]
 cmp bx, [bp + 0]
 cmp si, 2
@@ -75,12 +69,9 @@ cmp ax, [bp + 0]
 cmp al, [bx + si]
 cmp ax, bx
 cmp al, ah
-invalidByte
-invalidByte
-add di, [si]
-invalidByte
-invalidByte
-invalidByte
+cmp ax 1000
+cmp al 226
+cmp al 9
 invalidByte
 add dh, [di + 252]
 invalidByte

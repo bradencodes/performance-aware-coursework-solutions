@@ -307,23 +307,59 @@ const ImmediateAndRegisterOrMemoryArithmeticInstructions = {
   },
 };
 
-const getPartsForImmediateAndAccumulatorArithmeticInstructions = (
-  byte1: number,
-  byte2: number,
-  byte3?: number,
-) => {
-  const w = byte1 & 0b00000001;
+const ImmediateAndAccumulatorArithmeticInstructions = {
+  getParts: (
+    byte1: number,
+    byte2: number,
+    byte3?: number,
+  ) => {
+    const w = byte1 & 0b00000001;
 
-  const data = (() => {
     const is8bit = WIDTH.getIs8bit(w);
-    if (is8bit) {
-      return byte2;
-    }
 
-    return (byte3 as number << 8) | byte2;
-  })();
+    const data = (() => {
+      if (is8bit) {
+        return byte2;
+      }
 
-  return { w, data };
+      return (byte3 as number << 8) | byte2;
+    })();
+
+    const numOfBytes = (() => {
+      if (is8bit) return 2;
+
+      return 3;
+    })();
+
+    return { w, data, numOfBytes };
+  },
+
+  getAssemblyText: (
+    { mnemonic, w, data }: { mnemonic: string; w: number; data: number },
+  ) => {
+    const registerName = w === 0b0 ? "al" : "ax";
+
+    return `${mnemonic} ${registerName} ${data}`;
+  },
+
+  getInstructionInfo: (
+    mnemonic: string,
+    byte1: number,
+    byte2: number,
+    byte3?: number,
+  ) => {
+    const { w, data, numOfBytes } =
+      ImmediateAndAccumulatorArithmeticInstructions.getParts(
+        byte1,
+        byte2,
+        byte3,
+      );
+
+    const assemblyText = ImmediateAndAccumulatorArithmeticInstructions
+      .getAssemblyText({ mnemonic, w, data });
+
+    return { assemblyText, numOfBytes };
+  },
 };
 
 const getRegisterName = (w: number, registerCode: number) => {
@@ -504,7 +540,13 @@ export const INSTRUCTIONS = {
 
     ImmediateToAccumulator: {
       test: (byte1: number) => (byte1 & 0b11111110) >>> 1 === 0b0000010,
-      getParts: getPartsForImmediateAndAccumulatorArithmeticInstructions,
+      getInstructionInfo: (byte1: number, byte2: number, byte3?: number) =>
+        ImmediateAndAccumulatorArithmeticInstructions.getInstructionInfo(
+          INSTRUCTIONS.ADD.mnemonic,
+          byte1,
+          byte2,
+          byte3,
+        ),
     },
   },
 
@@ -553,7 +595,13 @@ export const INSTRUCTIONS = {
 
     ImmediateFromAccumulator: {
       test: (byte1: number) => (byte1 & 0b11111110) >>> 1 === 0b0010110,
-      getParts: getPartsForImmediateAndAccumulatorArithmeticInstructions,
+      getInstructionInfo: (byte1: number, byte2: number, byte3?: number) =>
+        ImmediateAndAccumulatorArithmeticInstructions.getInstructionInfo(
+          INSTRUCTIONS.SUBTRACT.mnemonic,
+          byte1,
+          byte2,
+          byte3,
+        ),
     },
   },
 
@@ -602,7 +650,13 @@ export const INSTRUCTIONS = {
 
     ImmediateWithAccumulator: {
       test: (byte1: number) => (byte1 & 0b11111110) >>> 1 === 0b0011110,
-      getParts: getPartsForImmediateAndAccumulatorArithmeticInstructions,
+      getInstructionInfo: (byte1: number, byte2: number, byte3?: number) =>
+        ImmediateAndAccumulatorArithmeticInstructions.getInstructionInfo(
+          INSTRUCTIONS.COMPARE.mnemonic,
+          byte1,
+          byte2,
+          byte3,
+        ),
     },
   },
 };
@@ -614,7 +668,7 @@ export const getInstructionInfoFromUnknownCode = (
   byte4?: number,
   byte5?: number,
   byte6?: number,
-) => {
+): { assemblyText: string; numOfBytes: number } => {
   const { MOVE, ADD, SUBTRACT, COMPARE } = INSTRUCTIONS;
 
   if (MOVE.RegisterOrMemoryToOrFromRegister.test(byte1)) {
@@ -661,13 +715,13 @@ export const getInstructionInfoFromUnknownCode = (
       byte6,
     );
   }
-  // if (ADD.ImmediateToAccumulator.test(byte1)) {
-  //   return ADD.ImmediateToAccumulator.getInstructionInfo(
-  //     byte1,
-  //     byte2,
-  //     byte3
-  //   );
-  // }
+  if (ADD.ImmediateToAccumulator.test(byte1)) {
+    return ADD.ImmediateToAccumulator.getInstructionInfo(
+      byte1,
+      byte2,
+      byte3,
+    );
+  }
 
   if (SUBTRACT.RegisterOrMemoryAndRegisterToEither.test(byte1)) {
     return SUBTRACT.RegisterOrMemoryAndRegisterToEither.getInstructionInfo(
@@ -687,13 +741,13 @@ export const getInstructionInfoFromUnknownCode = (
       byte6,
     );
   }
-  // if (SUBTRACT.ImmediateFromAccumulator.test(byte1)) {
-  //   return SUBTRACT.ImmediateFromAccumulator.getInstructionInfo(
-  //     byte1,
-  //     byte2,
-  //     byte3
-  //   );
-  // }
+  if (SUBTRACT.ImmediateFromAccumulator.test(byte1)) {
+    return SUBTRACT.ImmediateFromAccumulator.getInstructionInfo(
+      byte1,
+      byte2,
+      byte3,
+    );
+  }
 
   if (COMPARE.RegisterOrMemoryAndRegister.test(byte1)) {
     return COMPARE.RegisterOrMemoryAndRegister.getInstructionInfo(
@@ -713,13 +767,13 @@ export const getInstructionInfoFromUnknownCode = (
       byte6,
     );
   }
-  // if (COMPARE.ImmediateWithAccumulator.test(byte1)) {
-  //   return COMPARE.ImmediateWithAccumulator.getInstructionInfo(
-  //     byte1,
-  //     byte2,
-  //     byte3
-  //   );
-  // }
+  if (COMPARE.ImmediateWithAccumulator.test(byte1)) {
+    return COMPARE.ImmediateWithAccumulator.getInstructionInfo(
+      byte1,
+      byte2,
+      byte3,
+    );
+  }
 
   return { assemblyText: "invalidByte", numOfBytes: 1 };
 };
