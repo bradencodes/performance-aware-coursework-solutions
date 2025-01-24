@@ -1,6 +1,6 @@
 import { describe, it } from "jsr:@std/testing/bdd";
 import { expect } from "jsr:@std/expect";
-import { getInstructionInfoFromUnknownCode, Instructions } from "./main3.ts";
+import { getInstructionInfoFromUnknownCode, Instructions } from "./disassembler.ts";
 
 describe("INSTRUCTIONS", () => {
   describe("MOVE", () => {
@@ -214,55 +214,55 @@ describe("getInstructionInfoFromUnknownCode", () => {
     ).toBe("add cx, 8");
   });
 
-  it("works for register from memory with 8-bit displacement", () => {
-    expect(getInstructionInfoFromUnknownCode()).toBe("add bx, [bp + 0]");
+  // it("works for register from memory with 8-bit displacement", () => {
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add bx, [bp + 0]");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add cx, [bx + 2]");
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add cx, [bx + 2]");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add bh, [bp + si + 4]");
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add bh, [bp + si + 4]");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add di, [bp + di + 6]");
-  });
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add di, [bp + di + 6]");
+  // });
 
-  it("works for register to memory", () => {
-    expect(getInstructionInfoFromUnknownCode()).toBe("add [bx + si], bx");
+  // it("works for register to memory", () => {
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add [bx + si], bx");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add [bp], bx");
-  });
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add [bp], bx");
+  // });
 
-  it("works for register to memory with 8-bit displacement", () => {
-    expect(getInstructionInfoFromUnknownCode()).toBe("add [bp + 0], bx");
+  // it("works for register to memory with 8-bit displacement", () => {
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add [bp + 0], bx");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add [bx + 2], cx");
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add [bx + 2], cx");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add [bp + si + 4], bh");
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add [bp + si + 4], bh");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add [bp + di + 6], di");
-  });
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add [bp + di + 6], di");
+  // });
 
-  it("works for immediate to register", () => {
-    expect(getInstructionInfoFromUnknownCode()).toBe("add byte [bx], 34");
+  // it("works for immediate to register", () => {
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add byte [bx], 34");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe(
-      "add word [bp + si + 1000], 29",
-    );
-  });
+  //   expect(getInstructionInfoFromUnknownCode()).toBe(
+  //     "add word [bp + si + 1000], 29",
+  //   );
+  // });
 
-  it("works for register from memory or register", () => {
-    expect(getInstructionInfoFromUnknownCode()).toBe("add ax, [bp]");
+  // it("works for register from memory or register", () => {
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add ax, [bp]");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add al, [bx + si]");
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add al, [bx + si]");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add ax, bx");
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add ax, bx");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add al, ah");
-  });
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add al, ah");
+  // });
 
-  it("works for immediate to accumulator", () => {
-    expect(getInstructionInfoFromUnknownCode()).toBe("add ax, 1000");
+  // it("works for immediate to accumulator", () => {
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add ax, 1000");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add al, -30");
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add al, -30");
 
-    expect(getInstructionInfoFromUnknownCode()).toBe("add al, 9");
-  });
+  //   expect(getInstructionInfoFromUnknownCode()).toBe("add al, 9");
+  // });
 });

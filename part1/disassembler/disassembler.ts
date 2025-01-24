@@ -1,5 +1,3 @@
-import { parse } from "https://deno.land/std@0.200.0/flags/mod.ts";
-
 const MODE = {
   getHasDispLo: (mod: number, rm: number) =>
     (mod === 0b00 && rm === 0b110) || mod === 0b01 || mod === 0b10,
@@ -1109,14 +1107,8 @@ export const getInstructionInfoFromUnknownCode = (
   return { assemblyText: "invalidByte", numOfBytes: 1 };
 };
 
-const main = () => {
-  const binaryFilePath = parse(Deno.args)._[0];
-
-  if (!binaryFilePath || typeof binaryFilePath !== "string") return;
-
+export const createAssemblyText = (bytes: Uint8Array) => {
   let assemblyText = "bits 16\n";
-
-  const bytes = Deno.readFileSync(binaryFilePath);
 
   let currentByteIndex = 0;
   while (currentByteIndex < bytes.length) {
@@ -1144,5 +1136,3 @@ const main = () => {
 
   return assemblyText;
 };
-
-console.log(main());
